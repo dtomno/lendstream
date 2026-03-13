@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Lint commit messages (PR only) ────────────────────────────────────────────
+  commitlint:
+    name: Lint commit messages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install commitlint
+        run: npm install
+
+      - name: Lint commits since base branch
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+
+  # ── Typecheck all backend services in parallel ────────────────────────────────
+  typecheck:
+    name: Typecheck ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - loan-service
+          - credit-service
+          - risk-service
+          - approval-service
+          - account-service
+          - notification-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: services/${{ matrix.service }}/node_modules
+          key: ${{ runner.os }}-${{ matrix.service }}-${{ hashFiles(format('services/{0}/package.json', matrix.service)) }}
+
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: npm install
+
+      - name: TypeScript check
+        working-directory: services/${{ matrix.service }}
+        run: npx tsc --noEmit
+
+  # ── Build and typecheck frontend ──────────────────────────────────────────────
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: ${{ runner.os }}-frontend-${{ hashFiles('frontend/package.json') }}
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  # ── Integration smoke test ────────────────────────────────────────────────────
+  integration:
+    name: Integration smoke test
+    runs-on: ubuntu-latest
+    needs: [typecheck, frontend]
+    # commitlint only runs on PRs; integration always runs after typecheck+frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker images
+        run: docker compose build
+
+      - name: Start all services
+        run: docker compose up -d
+
+      - name: Wait for Kafka and Postgres to be ready
+        run: sleep 60
+
+      - name: Health check — all services
+        run: |
+          for port in 3001 3002 3003 3004 3005 3006; do
+            echo "Checking port $port..."
+            curl --fail --retry 5 --retry-delay 5 http://localhost:$port/health
+            echo ""
+          done
+
+      - name: Register test user
+        run: |
+          curl --fail -s -X POST http://localhost:3001/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"email":"ci@test.com","password":"password123","role":"LOAN_OFFICER"}' | jq .
+
+      - name: Login and get token
+        id: login
+        run: |
+          TOKEN=$(curl --fail -s -X POST http://localhost:3001/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"ci@test.com","password":"password123"}' | jq -r '.token')
+          echo "TOKEN=$TOKEN" >> $GITHUB_ENV
+
+      - name: Submit loan application
+        run: |
+          curl --fail -s -X POST http://localhost:3001/api/loans \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $TOKEN" \
+            -d '{
+              "applicantName": "CI Test User",
+              "email": "ci@test.com",
+              "amount": 25000,
+              "purpose": "Home Renovation",
+              "income": 75000,
+              "employmentStatus": "EMPLOYED"
+            }' | jq .
+
+      - name: Wait for pipeline to process
+        run: sleep 10
+
+      - name: Verify loan was processed
+        run: |
+          curl --fail -s \
+            -H "Authorization: Bearer $TOKEN" \
+            http://localhost:3001/api/loans | jq '.[0].status'
+
+      - name: Check Prometheus metrics endpoint
+        run: curl --fail http://localhost:3001/metrics | head -20
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

@@ -1,0 +1,15 @@
+{
+  "name": "loan-processing-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "typecheck": "for svc in loan-service credit-service risk-service approval-service account-service notification-service; do echo \"=== $svc ===\"; (cd services/$svc && npx tsc --noEmit) || exit 1; done",
+    "build:frontend": "cd frontend && npm run build"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "husky": "^9.0.11"
+  }
+}

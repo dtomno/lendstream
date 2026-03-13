@@ -1,0 +1,42 @@
+#!/bin/sh
+# Run TypeScript type-check on all services and build the frontend
+# before allowing a push to remote. Prevents broken code from reaching the repo.
+
+echo "🔍 Running pre-push checks..."
+
+PASS=true
+
+# ── TypeScript checks ──────────────────────────────────────────────────────────
+SERVICES="loan-service credit-service risk-service approval-service account-service notification-service"
+
+for svc in $SERVICES; do
+  echo ""
+  echo "  Checking $svc..."
+  (cd "services/$svc" && npx tsc --noEmit)
+  if [ $? -ne 0 ]; then
+    echo "  ✗ TypeScript error in $svc"
+    PASS=false
+  else
+    echo "  ✓ $svc"
+  fi
+done
+
+# ── Frontend build ─────────────────────────────────────────────────────────────
+echo ""
+echo "  Building frontend..."
+(cd frontend && npm run build --silent)
+if [ $? -ne 0 ]; then
+  echo "  ✗ Frontend build failed"
+  PASS=false
+else
+  echo "  ✓ frontend"
+fi
+
+# ── Result ─────────────────────────────────────────────────────────────────────
+echo ""
+if [ "$PASS" = false ]; then
+  echo "✗ Pre-push checks failed. Fix the errors above before pushing."
+  exit 1
+fi
+
+echo "✓ All checks passed. Pushing..."
