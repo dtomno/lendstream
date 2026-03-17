@@ -1,22 +1,25 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { submitLoan } from '../api';
 
 interface Props {
   onSubmitted: () => void;
 }
 
-const PURPOSES = ['Home Renovation', 'Debt Consolidation', 'Education', 'Medical', 'Business', 'Vehicle', 'Personal'];
+const PURPOSES = ['Home Renovation', 'Debt Consolidation', 'Education', 'Medical', 'Business', 'Vehicle', 'Personal'] as const;
 const EMPLOYMENT_STATUSES = ['EMPLOYED', 'SELF_EMPLOYED', 'UNEMPLOYED', 'RETIRED'] as const;
 
 const inputCls =
   'w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
 
 export default function LoanForm({ onSubmitted }: Props) {
+  const { t } = useTranslation();
+
   const [form, setForm] = useState({
     applicantName: '',
     email: '',
     amount: '',
-    purpose: PURPOSES[0],
+    purpose: PURPOSES[0] as string,
     income: '',
     employmentStatus: 'EMPLOYED' as string,
   });
@@ -36,11 +39,11 @@ export default function LoanForm({ onSubmitted }: Props) {
         amount: parseFloat(form.amount),
         income: parseFloat(form.income),
       });
-      setSuccess(`Application #${loan.id.slice(0, 8)}… submitted! Processing has begun.`);
+      setSuccess(t('loanForm.successMessage', { id: loan.id.slice(0, 8) }));
       setForm({ applicantName: '', email: '', amount: '', purpose: PURPOSES[0], income: '', employmentStatus: 'EMPLOYED' });
       onSubmitted();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to submit application';
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? t('loanForm.errorDefault');
       setError(msg);
     } finally {
       setLoading(false);
@@ -49,8 +52,8 @@ export default function LoanForm({ onSubmitted }: Props) {
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-      <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">New Loan Application</h2>
-      <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Submit an application to start the event pipeline</p>
+      <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">{t('loanForm.title')}</h2>
+      <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">{t('loanForm.subtitle')}</p>
 
       {success && (
         <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 rounded-lg text-sm">
@@ -65,32 +68,32 @@ export default function LoanForm({ onSubmitted }: Props) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('loanForm.fullName')}</label>
           <input
             type="text"
             value={form.applicantName}
             onChange={(e) => setForm({ ...form, applicantName: e.target.value })}
             className={inputCls}
-            placeholder="Jane Smith"
+            placeholder={t('loanForm.fullNamePlaceholder')}
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('loanForm.email')}</label>
           <input
             type="email"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             className={inputCls}
-            placeholder="jane@example.com"
+            placeholder={t('loanForm.emailPlaceholder')}
             required
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Loan Amount ($)</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('loanForm.loanAmount')}</label>
             <input
               type="number"
               value={form.amount}
@@ -102,41 +105,50 @@ export default function LoanForm({ onSubmitted }: Props) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Annual Income ($)</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {t('loanForm.annualIncome')}
+              {form.employmentStatus === 'UNEMPLOYED' && (
+                <span className="ml-2 text-xs font-normal text-slate-400 dark:text-slate-500">{t('loanForm.incomeNA')}</span>
+              )}
+            </label>
             <input
               type="number"
               value={form.income}
               onChange={(e) => setForm({ ...form, income: e.target.value })}
-              className={inputCls}
+              className={`${inputCls} ${form.employmentStatus === 'UNEMPLOYED' ? 'opacity-50 cursor-not-allowed' : ''}`}
               placeholder="75000"
-              min="1"
+              min={form.employmentStatus === 'UNEMPLOYED' ? '0' : '1'}
+              disabled={form.employmentStatus === 'UNEMPLOYED'}
               required
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Loan Purpose</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('loanForm.loanPurpose')}</label>
           <select
             value={form.purpose}
             onChange={(e) => setForm({ ...form, purpose: e.target.value })}
             className={inputCls}
           >
             {PURPOSES.map((p) => (
-              <option key={p} value={p}>{p}</option>
+              <option key={p} value={p}>{t(`loanForm.purposes.${p}`, p)}</option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Employment Status</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('loanForm.employmentStatus')}</label>
           <select
             value={form.employmentStatus}
-            onChange={(e) => setForm({ ...form, employmentStatus: e.target.value })}
+            onChange={(e) => {
+              const status = e.target.value;
+              setForm({ ...form, employmentStatus: status, income: status === 'UNEMPLOYED' ? '0' : (form.income === '0' ? '' : form.income) });
+            }}
             className={inputCls}
           >
             {EMPLOYMENT_STATUSES.map((s) => (
-              <option key={s} value={s}>{s.replace('_', ' ')}</option>
+              <option key={s} value={s}>{t(`employment.${s}`, s)}</option>
             ))}
           </select>
         </div>
@@ -146,13 +158,13 @@ export default function LoanForm({ onSubmitted }: Props) {
           disabled={loading}
           className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
         >
-          {loading ? 'Submitting…' : 'Submit Application'}
+          {loading ? t('loanForm.submitting') : t('loanForm.submit')}
         </button>
       </form>
 
       <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
         <p className="text-xs text-slate-400 dark:text-slate-500">
-          After submission, Kafka events will flow through: Credit Check → Risk Assessment → Approval → Account Creation
+          {t('loanForm.pipelineHint')}
         </p>
       </div>
     </div>

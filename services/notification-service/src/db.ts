@@ -15,7 +15,7 @@ export async function initDb(): Promise<void> {
       await pool.query(`
         CREATE TABLE IF NOT EXISTS notifications (
           id               UUID PRIMARY KEY,
-          loan_id          UUID         NOT NULL,
+          loan_id          UUID,
           recipient_email  VARCHAR(255) NOT NULL,
           recipient_name   VARCHAR(255) NOT NULL,
           type             VARCHAR(50)  NOT NULL,
@@ -26,6 +26,8 @@ export async function initDb(): Promise<void> {
           created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW()
         )
       `);
+      // Idempotent migration: drop NOT NULL on loan_id if it still exists from earlier schema
+      await pool.query(`ALTER TABLE notifications ALTER COLUMN loan_id DROP NOT NULL`);
       await pool.query(`
         CREATE TABLE IF NOT EXISTS dlq_events (
           id               UUID PRIMARY KEY,

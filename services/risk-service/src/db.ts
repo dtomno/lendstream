@@ -19,7 +19,7 @@ export async function initDb(): Promise<void> {
           credit_score        INTEGER        NOT NULL,
           risk_level          VARCHAR(20)    NOT NULL,
           risk_score          DECIMAL(5,2)   NOT NULL,
-          debt_to_income_ratio DECIMAL(8,4)  NOT NULL,
+          debt_to_income_ratio DECIMAL(12,4) NOT NULL,
           created_at          TIMESTAMPTZ    NOT NULL DEFAULT NOW()
         )
       `);
@@ -33,6 +33,11 @@ export async function initDb(): Promise<void> {
           created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `);
+      // Widen column if it was created with the old DECIMAL(8,4) precision
+      await pool.query(`
+        ALTER TABLE risk_assessments
+          ALTER COLUMN debt_to_income_ratio TYPE DECIMAL(12,4)
+      `).catch(() => { /* no-op if already correct or table doesn't exist yet */ });
       logger.info('Database ready');
       return;
     } catch (err) {

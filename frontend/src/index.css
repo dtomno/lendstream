@@ -7,3 +7,12 @@
     @apply bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100;
   }
 }
+
+/* Applied only during the dark/light toggle to avoid interfering with hover/focus transitions */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition: background-color 300ms ease, color 300ms ease, border-color 300ms ease !important;
+  transition-delay: 0ms !important;
+}

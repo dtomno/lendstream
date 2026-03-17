@@ -13,6 +13,16 @@ export interface Notification {
 
 // ── Kafka Event Payloads ──────────────────────────────────────────────────────
 
+export interface UserRegisteredEvent {
+  userId: string;
+  email: string;
+  role: string;
+  verificationToken?: string;
+  verificationUrl?: string;
+  correlationId: string;
+  timestamp: string;
+}
+
 export interface LoanDecisionMadeEvent {
   loanId: string;
   decision: 'APPROVED' | 'REJECTED';
@@ -34,6 +44,8 @@ export interface LoanAccountCreatedEvent {
   interestRate: number;
   termMonths: number;
   monthlyPayment: number;
+  applicantEmail: string;
+  applicantName: string;
   correlationId: string;
   timestamp: string;
 }

@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 interface Props {
   dark: boolean;
@@ -7,6 +9,7 @@ interface Props {
 }
 
 export default function Navbar({ dark, onToggleDark }: Props) {
+  const { t } = useTranslation();
   const { user, clearAuth } = useAuth();
   const navigate = useNavigate();
 
@@ -19,24 +22,27 @@ export default function Navbar({ dark, onToggleDark }: Props) {
     <header className="bg-blue-700 dark:bg-slate-900 text-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">LendStream</h1>
+          <h1 className="text-xl font-bold tracking-tight">{t('app.name')}</h1>
           <p className="text-blue-200 dark:text-slate-400 text-xs mt-0.5">
-            Event-Driven Loan Processing · Apache Kafka + Microservices
+            {t('app.taglineFull')}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ServiceBadge label="Kafka UI" href="http://localhost:8080" />
-          <ServiceBadge label="Grafana" href="http://localhost:3007" />
-          <ServiceBadge label="API Docs" href="http://localhost:3001/api/docs" />
+          <ServiceBadge label={t('nav.kafkaUI')} href="http://localhost:8080" />
+          <ServiceBadge label={t('nav.grafana')} href="http://localhost:3007" />
+          <ServiceBadge label={t('nav.apiDocs')} href="http://localhost:3001/api/docs" />
+
+          {/* Language switcher */}
+          <LanguageSwitcher variant="dark-nav" />
 
           {/* Dark mode toggle */}
           <button
             onClick={onToggleDark}
-            title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={dark ? t('auth.switchToLight') : t('auth.switchToDark')}
             className="flex items-center gap-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 border border-white/20 px-2.5 py-1 rounded-lg transition-colors"
           >
             <span>{dark ? '☀️' : '🌙'}</span>
-            <span className="hidden sm:inline">{dark ? 'Light' : 'Dark'}</span>
+            <span className="hidden sm:inline">{dark ? t('nav.light') : t('nav.dark')}</span>
           </button>
 
           {user && (
@@ -49,7 +55,7 @@ export default function Navbar({ dark, onToggleDark }: Props) {
                 onClick={handleLogout}
                 className="text-xs bg-white/10 hover:bg-red-600 border border-white/20 hover:border-red-500 px-2.5 py-1 rounded-lg transition-colors"
               >
-                Logout
+                {t('nav.logout')}
               </button>
             </div>
           )}

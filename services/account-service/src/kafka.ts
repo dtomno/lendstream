@@ -80,6 +80,8 @@ export async function initKafka(): Promise<void> {
           interestRate: event.interestRate,
           termMonths,
           monthlyPayment,
+          applicantEmail: event.applicantEmail,
+          applicantName: event.applicantName,
           correlationId,
           timestamp: new Date().toISOString(),
         };

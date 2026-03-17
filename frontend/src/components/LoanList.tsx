@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { fetchLoans } from '../api';
 import type { LoanApplication } from '../types';
 import PipelineModal from './PipelineModal';
@@ -22,6 +23,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function LoanList({ refreshKey }: Props) {
+  const { t } = useTranslation();
   const [loans, setLoans] = useState<LoanApplication[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,25 +55,25 @@ export default function LoanList({ refreshKey }: Props) {
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
       <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Loan Applications</h2>
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t('loanList.title')}</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {loans.length} total · click any row to view event pipeline
+            {t('loanList.subtitle', { count: loans.length })}
           </p>
         </div>
         <button
           onClick={load}
           className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
         >
-          Refresh
+          {t('loanList.refresh')}
         </button>
       </div>
 
       {loading ? (
-        <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-sm">Loading applications…</div>
+        <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-sm">{t('loanList.loading')}</div>
       ) : loans.length === 0 ? (
         <div className="p-8 text-center">
-          <p className="text-slate-400 dark:text-slate-500 text-sm">No applications yet.</p>
-          <p className="text-slate-300 dark:text-slate-600 text-xs mt-1">Submit an application to start the Kafka event pipeline.</p>
+          <p className="text-slate-400 dark:text-slate-500 text-sm">{t('loanList.empty')}</p>
+          <p className="text-slate-300 dark:text-slate-600 text-xs mt-1">{t('loanList.emptyHint')}</p>
         </div>
       ) : (
         <div className="divide-y divide-slate-100 dark:divide-slate-700">

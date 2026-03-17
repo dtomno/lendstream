@@ -15,7 +15,10 @@ export function assessRisk(
   riskLevel: RiskLevel;
   debtToIncomeRatio: number;
 } {
-  const debtToIncomeRatio = parseFloat(((amount + existingDebts) / income).toFixed(4));
+  // Guard against zero/missing income — treat as maximum DTI (worst case)
+  const debtToIncomeRatio = income > 0
+    ? parseFloat(((amount + existingDebts) / income).toFixed(4))
+    : 9999.9999;
 
   // Credit score component (lower credit = higher risk points)
   let creditRisk: number;

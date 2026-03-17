@@ -34,8 +34,28 @@ export async function initDb(): Promise<void> {
           email         VARCHAR(255)  UNIQUE NOT NULL,
           password_hash VARCHAR(255)  NOT NULL,
           role          VARCHAR(20)   NOT NULL DEFAULT 'APPLICANT',
+          email_verified            BOOLEAN     NOT NULL DEFAULT false,
+          verification_token        VARCHAR(64),
+          verification_token_expires TIMESTAMPTZ,
           created_at    TIMESTAMPTZ   DEFAULT NOW()
         )
+      `);
+
+      // Add email verification columns to existing users table if missing
+      await pool.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'users' AND column_name = 'email_verified'
+          ) THEN
+            ALTER TABLE users
+              ADD COLUMN email_verified             BOOLEAN     NOT NULL DEFAULT false,
+              ADD COLUMN verification_token         VARCHAR(64),
+              ADD COLUMN verification_token_expires TIMESTAMPTZ;
+          END IF;
+        END
+        $$;
       `);
 
       await pool.query(`

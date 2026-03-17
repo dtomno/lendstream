@@ -33,6 +33,8 @@ export interface LoanAccountCreatedEvent {
   interestRate: number;
   termMonths: number;
   monthlyPayment: number;
+  applicantEmail: string;
+  applicantName: string;
   correlationId: string;
   timestamp: string;
 }

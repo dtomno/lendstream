@@ -12,5 +12,13 @@ export function useDarkMode() {
     localStorage.setItem('theme', dark ? 'dark' : 'light');
   }, [dark]);
 
-  return { dark, toggle: () => setDark((d) => !d) };
+  const toggle = () => {
+    document.documentElement.classList.add('theme-transition');
+    setDark((d) => !d);
+    window.setTimeout(() => {
+      document.documentElement.classList.remove('theme-transition');
+    }, 300);
+  };
+
+  return { dark, toggle };
 }
