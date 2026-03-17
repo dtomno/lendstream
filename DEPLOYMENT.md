@@ -91,7 +91,28 @@ Additional variables for **loan-service only**:
 |---|---|
 | `JWT_SECRET` | Any long random string (min 32 chars) |
 
+Additional variables for **notification-service only**:
+
+| Variable | Value |
+|---|---|
+| `RESEND_API_KEY` | Your Resend API key (see Resend setup below) |
+| `EMAIL_FROM` | e.g. `LendStream <onboarding@resend.dev>` for testing, or `LendStream <noreply@yourdomain.com>` with a custom domain |
+
 After all 6 services are deployed, note their public Render URLs — you'll need them for Vercel.
+
+---
+
+## 3a. Resend (email delivery)
+
+Render free tier blocks all outbound SMTP ports (25, 465, 587). The notification-service uses the Resend HTTP API (port 443) instead. Resend is free for 3,000 emails/month.
+
+1. Go to [resend.com](https://resend.com) → sign up
+2. Go to **API Keys** → **Create API Key** → copy it (shown only once)
+3. In your Render `notification-service` environment variables, set:
+   - `RESEND_API_KEY` = the key you just copied
+   - `EMAIL_FROM` = `LendStream <onboarding@resend.dev>` *(Resend's shared test address — works immediately, no domain needed)*
+
+> **Custom domain (optional):** If you own a domain, go to **Domains** in the Resend dashboard, add it, and follow the DNS instructions. Then set `EMAIL_FROM` to `LendStream <noreply@yourdomain.com>`.
 
 ---
 
