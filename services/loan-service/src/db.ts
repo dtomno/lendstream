@@ -1,17 +1,27 @@
 import { Pool } from 'pg';
 import { logger } from './logger';
 
-export const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'loans_db',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres123',
+export const pool = process.env.DATABASE_URL
+  ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+  : new Pool({
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME || 'loans_db',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres123',
+    });
+
+// Isolate this service's tables in its own schema when sharing a single DB
+const SCHEMA = 'loan_service';
+pool.on('connect', (client) => {
+  client.query(`SET search_path TO ${SCHEMA}, public`);
 });
 
 export async function initDb(): Promise<void> {
   for (let attempt = 1; attempt <= 10; attempt++) {
     try {
+      await pool.query(`CREATE SCHEMA IF NOT EXISTS ${SCHEMA}`);
+
       await pool.query(`
         CREATE TABLE IF NOT EXISTS loan_applications (
           id                UUID          PRIMARY KEY,

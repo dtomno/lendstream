@@ -10,14 +10,30 @@ import type {
   AuthResponse,
 } from './types';
 
-// All requests go through nginx proxy (or vite dev proxy)
-const http = axios.create({ baseURL: '/' });
+// In production each service has its own Railway URL (set via VITE_ env vars).
+// In dev (vite proxy / docker nginx) these are undefined so axios uses the current origin.
+const SERVICE_BASES: Array<[string, string]> = [
+  ['/api/credit',        import.meta.env.VITE_CREDIT_SERVICE_URL       ?? ''],
+  ['/api/risk',          import.meta.env.VITE_RISK_SERVICE_URL          ?? ''],
+  ['/api/decisions',     import.meta.env.VITE_APPROVAL_SERVICE_URL      ?? ''],
+  ['/api/accounts',      import.meta.env.VITE_ACCOUNT_SERVICE_URL       ?? ''],
+  ['/api/notifications', import.meta.env.VITE_NOTIFICATION_SERVICE_URL  ?? ''],
+];
 
-// Attach JWT to every request if present
+const http = axios.create({ baseURL: import.meta.env.VITE_LOAN_SERVICE_URL ?? '' });
+
+// Attach JWT + route to the correct service base URL
 http.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  const url = config.url ?? '';
+  for (const [prefix, base] of SERVICE_BASES) {
+    if (url.startsWith(prefix) && base) {
+      config.baseURL = base;
+      break;
+    }
   }
   return config;
 });

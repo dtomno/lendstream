@@ -16,7 +16,11 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors(
+  process.env.FRONTEND_URL
+    ? { origin: process.env.FRONTEND_URL, credentials: true }
+    : undefined,
+));
 app.use(express.json());
 
 // Prometheus metrics middleware (before routes so all requests are timed)

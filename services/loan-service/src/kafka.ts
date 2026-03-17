@@ -7,6 +7,16 @@ import type { LoanDecisionMadeEvent, LoanApplicationSubmittedEvent } from './typ
 const kafka = new Kafka({
   clientId: 'loan-service',
   brokers: [process.env.KAFKA_BROKER || 'localhost:9094'],
+  ...(process.env.KAFKA_SASL_USERNAME
+    ? {
+        ssl: true,
+        sasl: {
+          mechanism: 'scram-sha-256' as const,
+          username: process.env.KAFKA_SASL_USERNAME,
+          password: process.env.KAFKA_SASL_PASSWORD || '',
+        },
+      }
+    : {}),
   logLevel: logLevel.WARN,
 });
 

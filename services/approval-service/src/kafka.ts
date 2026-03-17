@@ -10,6 +10,16 @@ import { sendToDlq } from './dlq/dlqHandler';
 const kafka = new Kafka({
   clientId: 'approval-service',
   brokers: [process.env.KAFKA_BROKER || 'localhost:9094'],
+  ...(process.env.KAFKA_SASL_USERNAME
+    ? {
+        ssl: true,
+        sasl: {
+          mechanism: 'scram-sha-256' as const,
+          username: process.env.KAFKA_SASL_USERNAME,
+          password: process.env.KAFKA_SASL_PASSWORD || '',
+        },
+      }
+    : {}),
   logLevel: logLevel.WARN,
 });
 

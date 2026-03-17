@@ -8,7 +8,11 @@ import { logger } from './logger';
 import { initEmailTransport } from './emailService';
 
 const app = express();
-app.use(cors());
+app.use(cors(
+  process.env.FRONTEND_URL
+    ? { origin: process.env.FRONTEND_URL, credentials: true }
+    : undefined,
+));
 app.use(express.json());
 app.use(metricsMiddleware);
 

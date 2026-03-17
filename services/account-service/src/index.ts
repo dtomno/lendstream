@@ -7,7 +7,11 @@ import { metricsMiddleware, registry } from './metrics';
 import { logger } from './logger';
 
 const app = express();
-app.use(cors());
+app.use(cors(
+  process.env.FRONTEND_URL
+    ? { origin: process.env.FRONTEND_URL, credentials: true }
+    : undefined,
+));
 app.use(express.json());
 app.use(metricsMiddleware);
 

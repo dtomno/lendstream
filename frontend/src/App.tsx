@@ -10,6 +10,8 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import LoanForm from './components/LoanForm';
 import LoanList from './components/LoanList';
 import { useDarkMode } from './hooks/useDarkMode';
+import { useServiceWakeup } from './hooks/useServiceWakeup';
+import WakingUpOverlay from './components/WakingUpOverlay';
 
 const FLOW_ITEMS = [
   'Loan Service',
@@ -96,10 +98,12 @@ function Dashboard({ onToggleDark, dark }: { onToggleDark: () => void; dark: boo
 
 export default function App() {
   const { dark, toggle } = useDarkMode();
+  const wakeupStatus = useServiceWakeup();
 
   return (
     <BrowserRouter>
       <AuthProvider>
+        <WakingUpOverlay status={wakeupStatus} />
         <Routes>
           <Route path="/login" element={<LoginPage dark={dark} onToggleDark={toggle} />} />
           <Route path="/register" element={<RegisterPage dark={dark} onToggleDark={toggle} />} />
