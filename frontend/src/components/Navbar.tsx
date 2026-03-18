@@ -9,6 +9,17 @@ interface Props {
   onToggleDark: () => void;
 }
 
+const LOAN_SERVICE_URL = import.meta.env.VITE_LOAN_SERVICE_URL ?? '';
+const IS_LOCAL = !LOAN_SERVICE_URL;
+
+const DEV_LINKS = [
+  { key: 'kafkaUI',  href: 'http://localhost:8080' },
+  { key: 'grafana',  href: 'http://localhost:3007' },
+];
+const API_DOCS_HREF = IS_LOCAL
+  ? 'http://localhost:3001/api/docs'
+  : `${LOAN_SERVICE_URL}/api/docs`;
+
 export default function Navbar({ dark, onToggleDark }: Props) {
   const { t } = useTranslation();
   const { user, clearAuth } = useAuth();
@@ -33,11 +44,12 @@ export default function Navbar({ dark, onToggleDark }: Props) {
 
         {/* Right section */}
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          {/* Service badges — dev links, only on larger screens */}
+          {/* Service badges — only on larger screens */}
           <div className="hidden lg:flex items-center gap-1.5">
-            <ServiceBadge label={t('nav.kafkaUI')} href="http://localhost:8080" />
-            <ServiceBadge label={t('nav.grafana')} href="http://localhost:3007" />
-            <ServiceBadge label={t('nav.apiDocs')} href="http://localhost:3001/api/docs" />
+            {IS_LOCAL && DEV_LINKS.map(({ key, href }) => (
+              <ServiceBadge key={key} label={t(`nav.${key}`)} href={href} />
+            ))}
+            <ServiceBadge label={t('nav.apiDocs')} href={API_DOCS_HREF} />
           </div>
 
           {/* Language switcher */}
@@ -104,11 +116,12 @@ export default function Navbar({ dark, onToggleDark }: Props) {
             </div>
           </div>
 
-          {/* Dev links */}
+          {/* Service links */}
           <div className="flex flex-wrap gap-2">
-            <MobileServiceBadge label={t('nav.kafkaUI')} href="http://localhost:8080" />
-            <MobileServiceBadge label={t('nav.grafana')} href="http://localhost:3007" />
-            <MobileServiceBadge label={t('nav.apiDocs')} href="http://localhost:3001/api/docs" />
+            {IS_LOCAL && DEV_LINKS.map(({ key, href }) => (
+              <MobileServiceBadge key={key} label={t(`nav.${key}`)} href={href} />
+            ))}
+            <MobileServiceBadge label={t('nav.apiDocs')} href={API_DOCS_HREF} />
           </div>
 
           {/* Logout */}
