@@ -91,28 +91,31 @@ Additional variables for **loan-service only**:
 |---|---|
 | `JWT_SECRET` | Any long random string (min 32 chars) |
 
-Additional variables for **notification-service only**:
+Additional variables for **notification-service** and **loan-service**:
 
 | Variable | Value |
 |---|---|
-| `RESEND_API_KEY` | Your Resend API key (see Resend setup below) |
-| `EMAIL_FROM` | e.g. `LendStream <onboarding@resend.dev>` for testing, or `LendStream <noreply@yourdomain.com>` with a custom domain |
+| `BREVO_API_KEY` | Your Brevo API key (see Brevo setup below) |
+| `EMAIL_FROM_ADDRESS` | The verified sender email you added in Brevo (e.g. `you@gmail.com`) |
+| `EMAIL_FROM_NAME` | `LendStream` |
 
 After all 6 services are deployed, note their public Render URLs — you'll need them for Vercel.
 
 ---
 
-## 3a. Resend (email delivery)
+## 3a. Brevo (email delivery)
 
-Render free tier blocks all outbound SMTP ports (25, 465, 587). The notification-service uses the Resend HTTP API (port 443) instead. Resend is free for 3,000 emails/month.
+Render free tier blocks all outbound SMTP ports (25, 465, 587). Both `notification-service` and `loan-service` use the Brevo HTTP API (port 443) instead. Brevo is free for 300 emails/day — **no domain required**, just verify any email address you own.
 
-1. Go to [resend.com](https://resend.com) → sign up
-2. Go to **API Keys** → **Create API Key** → copy it (shown only once)
-3. In your Render `notification-service` environment variables, set:
-   - `RESEND_API_KEY` = the key you just copied
-   - `EMAIL_FROM` = `LendStream <onboarding@resend.dev>` *(Resend's shared test address — works immediately, no domain needed)*
-
-> **Custom domain (optional):** If you own a domain, go to **Domains** in the Resend dashboard, add it, and follow the DNS instructions. Then set `EMAIL_FROM` to `LendStream <noreply@yourdomain.com>`.
+1. Go to [brevo.com](https://brevo.com) → sign up (free)
+2. Go to **Senders & IPs** → **Senders** → **Add a Sender**
+   - Enter any email you own (e.g. your Gmail address)
+   - Brevo sends a verification link to that address — click it
+3. Go to **SMTP & API** → **API Keys** → **Generate a new API key** → copy it
+4. In your Render environment variables, set the following on **both** `notification-service` and `loan-service`:
+   - `BREVO_API_KEY` = the API key you copied
+   - `EMAIL_FROM_ADDRESS` = the email address you verified in step 2
+   - `EMAIL_FROM_NAME` = `LendStream`
 
 ---
 

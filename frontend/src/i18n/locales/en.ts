@@ -20,6 +20,7 @@ export default {
     role: 'Role',
     switchToLight: 'Switch to light mode',
     switchToDark: 'Switch to dark mode',
+    orContinueWith: 'or continue with',
     login: {
       title: 'Sign in',
       submit: 'Sign in',
@@ -38,6 +39,9 @@ export default {
       checkEmail: 'Check your email',
       verifyEmailSent: 'We sent a verification link to {{email}}. Please click it to activate your account.',
       backToLogin: 'Back to sign in',
+      roleApplicantShort: 'Applicant',
+      roleLoanOfficerShort: 'Loan Officer',
+      googleRoleHint: 'Will register as: {{role}}',
     },
     verify: {
       verifying: 'Verifying your email…',
@@ -51,6 +55,7 @@ export default {
       resendButton: 'Resend verification email',
       resending: 'Sending…',
       resendSuccess: 'Verification email sent! Please check your inbox.',
+      resendFailed: 'Failed to send the verification email. Please try again.',
       cancelButton: 'Cancel',
       errors: {
         INVALID_TOKEN: 'This verification link is invalid or has already been used.',
@@ -67,6 +72,8 @@ export default {
       EMAIL_NOT_VERIFIED: 'Please verify your email before logging in',
       INTERNAL_ERROR: 'Internal server error',
       LOGIN_FAILED: 'Login failed. Please try again.',
+      GOOGLE_AUTH_FAILED: 'Google sign-in failed. Please try again.',
+      GOOGLE_NOT_CONFIGURED: 'Google sign-in is not configured.',
     },
   },
   loanForm: {

@@ -121,6 +121,10 @@ services:
       - KAFKA_BROKER=kafka:9092
       - JWT_SECRET=${JWT_SECRET:-super-secret-jwt-key-change-in-production-min-32-chars}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - BREVO_API_KEY=${BREVO_API_KEY:-}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-LendStream}
+      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - LOG_LEVEL=info
       - KAFKAJS_NO_PARTITIONER_WARNING=1
     depends_on:
@@ -283,8 +287,10 @@ services:
       - KAFKA_BROKER=kafka:9092
       - LOG_LEVEL=info
       - KAFKAJS_NO_PARTITIONER_WARNING=1
-      # Leave blank to use Ethereal auto-account (preview URLs logged to console)
-      # Set these for real SMTP (SendGrid, Mailgun, Gmail, etc.)
+      - BREVO_API_KEY=${BREVO_API_KEY:-}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-LendStream}
+      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS:-}
+      # SMTP fallback (used only when BREVO_API_KEY is not set)
       - EMAIL_HOST=${EMAIL_HOST:-}
       - EMAIL_PORT=${EMAIL_PORT:-587}
       - EMAIL_USER=${EMAIL_USER:-}

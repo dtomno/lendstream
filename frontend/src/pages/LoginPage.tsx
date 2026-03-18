@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { login, resendVerification } from '../api';
+import { GoogleLogin } from '@react-oauth/google';
+import { login, resendVerification, googleAuth } from '../api';
 import { useAuth } from '../context/AuthContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
@@ -22,6 +23,22 @@ export default function LoginPage({ dark, onToggleDark }: Props) {
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
+  const [resendError, setResendError] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleSuccess = async (credential: string) => {
+    setGoogleLoading(true);
+    setError('');
+    try {
+      const data = await googleAuth({ credential });
+      setAuth(data!.token, data!.user);
+      navigate('/');
+    } catch (err: any) {
+      setError(t(`auth.errors.${err.errorCode ?? 'GOOGLE_AUTH_FAILED'}`, { defaultValue: err.message }));
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -46,11 +63,12 @@ export default function LoginPage({ dark, onToggleDark }: Props) {
   const handleResendVerification = async () => {
     setResendLoading(true);
     setResendMessage('');
+    setResendError('');
     try {
       await resendVerification(email);
       setResendMessage(t('auth.verify.resendSuccess'));
-    } catch (err: any) {
-      setResendMessage(t('auth.errors.INTERNAL_ERROR'));
+    } catch {
+      setResendError(t('auth.verify.resendFailed'));
     } finally {
       setResendLoading(false);
     }
@@ -80,6 +98,11 @@ export default function LoginPage({ dark, onToggleDark }: Props) {
                 {resendMessage}
               </div>
             )}
+            {resendError && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
+                {resendError}
+              </div>
+            )}
 
             <div className="flex gap-2">
               <button
@@ -90,7 +113,7 @@ export default function LoginPage({ dark, onToggleDark }: Props) {
                 {resendLoading ? t('auth.verify.resending') : t('auth.verify.resendButton')}
               </button>
               <button
-                onClick={() => { setShowVerifyDialog(false); setResendMessage(''); }}
+                onClick={() => { setShowVerifyDialog(false); setResendMessage(''); setResendError(''); }}
                 className="flex-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-medium py-2 rounded-lg text-sm transition-colors"
               >
                 {t('auth.verify.cancelButton')}
@@ -160,6 +183,24 @@ export default function LoginPage({ dark, onToggleDark }: Props) {
               {loading ? t('auth.login.submitting') : t('auth.login.submit')}
             </button>
           </form>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-600" />
+            <span className="text-xs text-slate-400 dark:text-slate-500">{t('auth.orContinueWith')}</span>
+            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-600" />
+          </div>
+
+          {/* Google Sign-In */}
+          <div className={`flex justify-center transition-opacity ${googleLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+            <GoogleLogin
+              onSuccess={(res) => res.credential && handleGoogleSuccess(res.credential)}
+              onError={() => setError(t('auth.errors.GOOGLE_AUTH_FAILED'))}
+              text="signin_with"
+              shape="rectangular"
+              width="100%"
+            />
+          </div>
 
           <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
             {t('auth.login.noAccount')}{' '}

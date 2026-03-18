@@ -1,15 +1,17 @@
 import nodemailer from 'nodemailer';
 import { logger } from './logger';
 
-// Resend HTTP API — works on any platform (no SMTP port required)
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM || 'LendStream <onboarding@resend.dev>';
+// Brevo HTTP API — works on any platform (no SMTP port required), no domain needed
+// Free tier: 300 emails/day. Set BREVO_API_KEY to enable.
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'LendStream';
+const EMAIL_FROM_ADDRESS = process.env.EMAIL_FROM_ADDRESS || '';
 
 let smtpTransporter: nodemailer.Transporter | null = null;
 
 export async function initEmailTransport(): Promise<void> {
-  if (RESEND_API_KEY) {
-    logger.info('Email transport: Resend HTTP API');
+  if (BREVO_API_KEY) {
+    logger.info('Email transport: Brevo HTTP API');
     return;
   }
 
@@ -43,35 +45,35 @@ export async function sendEmail(options: {
   html?: string;
 }): Promise<void> {
   try {
-    if (RESEND_API_KEY) {
-      const res = await fetch('https://api.resend.com/emails', {
+    if (BREVO_API_KEY) {
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${RESEND_API_KEY}`,
+          'api-key': BREVO_API_KEY,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: EMAIL_FROM,
-          to: options.to,
+          sender: { name: EMAIL_FROM_NAME, email: EMAIL_FROM_ADDRESS },
+          to: [{ email: options.to }],
           subject: options.subject,
-          text: options.text,
-          ...(options.html ? { html: options.html } : {}),
+          textContent: options.text,
+          ...(options.html ? { htmlContent: options.html } : {}),
         }),
       });
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(`Resend ${res.status}: ${JSON.stringify(body)}`);
+        throw new Error(`Brevo ${res.status}: ${JSON.stringify(body)}`);
       }
 
-      logger.info('Email sent via Resend', { to: options.to, subject: options.subject });
+      logger.info('Email sent via Brevo', { to: options.to, subject: options.subject });
       return;
     }
 
     if (!smtpTransporter) throw new Error('Email transporter not initialised');
 
     const info = await smtpTransporter.sendMail({
-      from: EMAIL_FROM,
+      from: `"${EMAIL_FROM_NAME}" <${EMAIL_FROM_ADDRESS || 'noreply@lendstream.io'}>`,
       ...options,
     });
     const previewUrl = nodemailer.getTestMessageUrl(info);

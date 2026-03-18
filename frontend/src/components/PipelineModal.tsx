@@ -117,7 +117,7 @@ export default function PipelineModal({ loanId, onClose }: Props) {
         <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700">
           <div>
             <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{t('pipeline.title')}</h2>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 font-mono">{loanId}</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 font-mono truncate max-w-[220px] sm:max-w-none">{loanId}</p>
           </div>
           <button
             onClick={onClose}

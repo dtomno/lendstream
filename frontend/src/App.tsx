@@ -46,8 +46,8 @@ function Dashboard({ onToggleDark, dark }: { onToggleDark: () => void; dark: boo
       <Navbar onToggleDark={onToggleDark} dark={dark} />
 
       {/* Architecture banner */}
-      <div className="bg-blue-600 dark:bg-slate-800 text-white text-xs py-2">
-        <div className="max-w-7xl mx-auto px-4 flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+      <div className="bg-blue-600 dark:bg-slate-800 text-white text-xs py-2 overflow-x-auto">
+        <div className="max-w-7xl mx-auto px-4 flex items-center gap-2 whitespace-nowrap min-w-max">
           <span className="opacity-60">{t('appFlow.label')}</span>
           {FLOW_ITEMS.map((item, i) => (
             <span

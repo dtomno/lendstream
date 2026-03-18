@@ -3,10 +3,15 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { randomBytes } from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
 import { pool } from '../db';
 import { logger } from '../logger';
 import type { UserRole } from './types';
 import { JWT_SECRET } from './jwtSecret';
+import { sendVerificationEmail } from '../email';
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -286,14 +291,13 @@ authRouter.post('/resend-verification', async (req: Request, res: Response): Pro
 
   const normalizedEmail = email.toLowerCase().trim();
 
-  const client = await pool.connect();
   try {
-    const result = await client.query(
+    const result = await pool.query(
       `SELECT id, email_verified FROM users WHERE email = $1`,
       [normalizedEmail],
     );
 
-    // Always respond with success to avoid revealing whether an account exists
+    // Always respond with the same message to avoid revealing whether an account exists
     if (result.rows.length === 0 || result.rows[0].email_verified) {
       res.json({ message: 'If an unverified account exists with that email, a verification email has been sent.' });
       return;
@@ -304,41 +308,122 @@ authRouter.post('/resend-verification', async (req: Request, res: Response): Pro
     const verificationTokenExpires = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS);
     const verificationUrl = `${FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
-    await client.query('BEGIN');
-
-    await client.query(
+    // Persist the new token first
+    await pool.query(
       `UPDATE users SET verification_token = $1, verification_token_expires = $2 WHERE id = $3`,
       [verificationToken, verificationTokenExpires, userId],
     );
 
-    await client.query(
-      `INSERT INTO outbox_events (id, aggregate_id, topic, payload, published)
-       VALUES ($1, $2, $3, $4, false)`,
-      [
-        uuidv4(),
-        userId,
-        'user-registered',
-        JSON.stringify({
-          userId,
-          email: normalizedEmail,
-          role: 'APPLICANT',
-          verificationToken,
-          verificationUrl,
-          correlationId: userId,
-          timestamp: new Date().toISOString(),
-        }),
-      ],
-    );
-
-    await client.query('COMMIT');
+    // Send directly and synchronously — so we can confirm delivery before responding
+    await sendVerificationEmail(normalizedEmail, verificationUrl);
 
     logger.info('Verification email resent', { userId, email: normalizedEmail });
     res.json({ message: 'Verification email sent. Please check your inbox.' });
   } catch (err) {
-    await client.query('ROLLBACK');
     logger.error('Error resending verification email', { email: normalizedEmail, err });
-    res.status(500).json({ error_code: 'INTERNAL_ERROR', error: 'Internal server error' });
-  } finally {
-    client.release();
+    res.status(500).json({ error_code: 'EMAIL_SEND_FAILED', error: 'Failed to send verification email. Please try again.' });
+  }
+});
+
+/**
+ * @openapi
+ * /auth/google:
+ *   post:
+ *     summary: Sign in or sign up with Google
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [credential]
+ *             properties:
+ *               credential:
+ *                 type: string
+ *                 description: Google ID token from the client
+ *               role:
+ *                 type: string
+ *                 enum: [APPLICANT, LOAN_OFFICER]
+ *                 description: Role for new accounts only (defaults to APPLICANT)
+ *     responses:
+ *       200:
+ *         description: JWT token issued
+ *       400:
+ *         description: Missing or invalid credential
+ *       500:
+ *         description: Internal error
+ */
+authRouter.post('/google', async (req: Request, res: Response): Promise<void> => {
+  const { credential, role } = req.body;
+
+  if (!credential || typeof credential !== 'string') {
+    res.status(400).json({ error_code: 'MISSING_CREDENTIAL', error: 'Google credential is required' });
+    return;
+  }
+
+  if (!GOOGLE_CLIENT_ID) {
+    res.status(500).json({ error_code: 'GOOGLE_NOT_CONFIGURED', error: 'Google sign-in is not configured on this server' });
+    return;
+  }
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload?.email) {
+      res.status(400).json({ error_code: 'INVALID_CREDENTIAL', error: 'Could not retrieve email from Google token' });
+      return;
+    }
+
+    const email = payload.email.toLowerCase();
+    const googleId = payload.sub;
+
+    // Check if user already exists
+    const existing = await pool.query(
+      `SELECT id, email, role, email_verified FROM users WHERE email = $1`,
+      [email],
+    );
+
+    if (existing.rows.length > 0) {
+      const user = existing.rows[0];
+      // Link google_id if not already linked
+      await pool.query(
+        `UPDATE users SET google_id = $1, email_verified = true WHERE id = $2 AND google_id IS NULL`,
+        [googleId, user.id],
+      );
+      const token = jwt.sign(
+        { userId: user.id, email: user.email, role: user.role },
+        JWT_SECRET,
+        { expiresIn: '30m' },
+      );
+      logger.info('User signed in via Google', { userId: user.id, email });
+      res.json({ token, user: { userId: user.id, email: user.email, role: user.role } });
+      return;
+    }
+
+    // New user — create account (email already verified by Google)
+    const userId = uuidv4();
+    const validRoles: UserRole[] = ['APPLICANT', 'LOAN_OFFICER'];
+    const userRole: UserRole = role && validRoles.includes(role) ? role : 'APPLICANT';
+
+    await pool.query(
+      `INSERT INTO users (id, email, password_hash, role, email_verified, google_id)
+       VALUES ($1, $2, NULL, $3, true, $4)`,
+      [userId, email, userRole, googleId],
+    );
+
+    const token = jwt.sign(
+      { userId, email, role: userRole },
+      JWT_SECRET,
+      { expiresIn: '30m' },
+    );
+    logger.info('New user registered via Google', { userId, email, role: userRole });
+    res.status(201).json({ token, user: { userId, email, role: userRole } });
+  } catch (err) {
+    logger.error('Google auth error', { err });
+    res.status(500).json({ error_code: 'GOOGLE_AUTH_FAILED', error: 'Google sign-in failed. Please try again.' });
   }
 });

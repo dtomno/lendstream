@@ -85,6 +85,11 @@ export const login = (data: { email: string; password: string }) =>
     throwApiError(err, 'Login failed. Please try again.');
   });
 
+export const googleAuth = (data: { credential: string; role?: string }) =>
+  http.post<AuthResponse>('/api/auth/google', data).then((r) => r.data).catch((err) => {
+    throwApiError(err, 'Google sign-in failed. Please try again.');
+  });
+
 // ── Loans ───────────────────────────────────────────────────────────────────
 
 export const submitLoan = (data: {

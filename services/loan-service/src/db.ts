@@ -42,28 +42,37 @@ export async function initDb(): Promise<void> {
         CREATE TABLE IF NOT EXISTS users (
           id            UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
           email         VARCHAR(255)  UNIQUE NOT NULL,
-          password_hash VARCHAR(255)  NOT NULL,
+          password_hash VARCHAR(255),
           role          VARCHAR(20)   NOT NULL DEFAULT 'APPLICANT',
           email_verified            BOOLEAN     NOT NULL DEFAULT false,
           verification_token        VARCHAR(64),
           verification_token_expires TIMESTAMPTZ,
+          google_id     VARCHAR(255)  UNIQUE,
           created_at    TIMESTAMPTZ   DEFAULT NOW()
         )
       `);
 
-      // Add email verification columns to existing users table if missing
+      // Migrate existing users table: add columns if missing
       await pool.query(`
         DO $$
         BEGIN
           IF NOT EXISTS (
             SELECT 1 FROM information_schema.columns
-            WHERE table_name = 'users' AND column_name = 'email_verified'
+            WHERE table_schema = 'loan_service' AND table_name = 'users' AND column_name = 'email_verified'
           ) THEN
             ALTER TABLE users
               ADD COLUMN email_verified             BOOLEAN     NOT NULL DEFAULT false,
               ADD COLUMN verification_token         VARCHAR(64),
               ADD COLUMN verification_token_expires TIMESTAMPTZ;
           END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = 'loan_service' AND table_name = 'users' AND column_name = 'google_id'
+          ) THEN
+            ALTER TABLE users ADD COLUMN google_id VARCHAR(255) UNIQUE;
+          END IF;
+          -- Allow password_hash to be NULL for OAuth users
+          ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
         END
         $$;
       `);

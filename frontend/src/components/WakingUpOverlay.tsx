@@ -5,8 +5,10 @@ interface Props {
 }
 
 export default function WakingUpOverlay({ status }: Props) {
+  const IS_RENDER = import.meta.env.VITE_PLATFORM === 'render';
+  // console.log('WakingUpOverlay status:', status, 'IS_RENDER:', IS_RENDER);
   //return loading spinner if status is 'idle'
- if (status === 'idle') {
+ if (status === 'idle' && IS_RENDER) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl p-8 w-full max-w-sm mx-4 text-center">
