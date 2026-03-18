@@ -14,6 +14,11 @@ import { logger } from './logger';
 
 const app = express();
 
+// Trust the first proxy (required on Render/Railway/Heroku so that
+// express-rate-limit reads the real client IP from X-Forwarded-For
+// instead of treating every request as coming from the same proxy IP)
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 app.use(cors(
@@ -29,17 +34,18 @@ app.use(metricsMiddleware);
 // Rate limiters
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: 200,                   // per IP — reasonable for a demo/portfolio app
   standardHeaders: true,
   legacyHeaders: false,
+  message: { error_code: 'RATE_LIMITED', error: 'Too many requests. Please wait a moment and try again.' },
 });
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50,
+  max: 30,                   // stricter for auth endpoints
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many auth attempts' },
+  message: { error_code: 'RATE_LIMITED', error: 'Too many attempts. Please wait 15 minutes and try again.' },
 });
 
 // Routes

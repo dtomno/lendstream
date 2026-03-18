@@ -50,6 +50,12 @@ http.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
+    // Normalise 429 so callers get a clean errorCode to display
+    if (err.response?.status === 429) {
+      const e = new Error(err.response.data?.error ?? 'Too many requests. Please wait a moment and try again.');
+      (e as Error & { errorCode: string }).errorCode = 'RATE_LIMITED';
+      return Promise.reject(e);
+    }
     return Promise.reject(err);
   },
 );

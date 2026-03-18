@@ -74,6 +74,7 @@ export default {
       LOGIN_FAILED: 'Échec de la connexion. Veuillez réessayer.',
       GOOGLE_AUTH_FAILED: 'Échec de la connexion avec Google. Veuillez réessayer.',
       GOOGLE_NOT_CONFIGURED: "La connexion Google n'est pas configurée.",
+      RATE_LIMITED: 'Trop de requêtes. Veuillez patienter un moment et réessayer.',
     },
   },
   loanForm: {

@@ -74,6 +74,7 @@ export default {
       LOGIN_FAILED: 'Kuingia kumeshindwa. Tafadhali jaribu tena.',
       GOOGLE_AUTH_FAILED: 'Kuingia kwa Google kumeshindwa. Tafadhali jaribu tena.',
       GOOGLE_NOT_CONFIGURED: 'Kuingia kwa Google hakujasanidiwa.',
+      RATE_LIMITED: 'Maombi mengi sana. Tafadhali subiri kidogo kisha jaribu tena.',
     },
   },
   loanForm: {

@@ -74,6 +74,7 @@ export default {
       LOGIN_FAILED: 'Anmeldung fehlgeschlagen. Bitte versuche es erneut.',
       GOOGLE_AUTH_FAILED: 'Google-Anmeldung fehlgeschlagen. Bitte versuche es erneut.',
       GOOGLE_NOT_CONFIGURED: 'Google-Anmeldung ist nicht konfiguriert.',
+      RATE_LIMITED: 'Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.',
     },
   },
   loanForm: {

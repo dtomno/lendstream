@@ -74,6 +74,7 @@ export default {
       LOGIN_FAILED: 'Error al iniciar sesión. Por favor, inténtalo de nuevo.',
       GOOGLE_AUTH_FAILED: 'Error al iniciar sesión con Google. Por favor, inténtalo de nuevo.',
       GOOGLE_NOT_CONFIGURED: 'El inicio de sesión con Google no está configurado.',
+      RATE_LIMITED: 'Demasiadas solicitudes. Por favor, espera un momento e inténtalo de nuevo.',
     },
   },
   loanForm: {

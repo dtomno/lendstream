@@ -74,6 +74,7 @@ export default {
       LOGIN_FAILED: 'Login failed. Please try again.',
       GOOGLE_AUTH_FAILED: 'Google sign-in failed. Please try again.',
       GOOGLE_NOT_CONFIGURED: 'Google sign-in is not configured.',
+      RATE_LIMITED: 'Too many requests. Please wait a moment and try again.',
     },
   },
   loanForm: {
