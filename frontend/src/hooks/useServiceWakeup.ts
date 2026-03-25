@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 
 // Only active when deployed on Render free tier (set VITE_PLATFORM=render on Vercel)
 const IS_RENDER = import.meta.env.VITE_PLATFORM === 'render';
-const LOAN_SERVICE_URL = import.meta.env.VITE_LOAN_SERVICE_URL ?? '';
 
 // All pipeline services — pinged on startup so their Kafka consumers are running
 // before the user submits a loan application.
@@ -33,14 +32,9 @@ async function ping(baseUrl: string, timeoutMs: number): Promise<boolean> {
   }
 }
 
-// Wake all pipeline services in the background (fire-and-forget).
-// Render only wakes a service when it gets HTTP traffic — without this,
-// credit/risk/approval/account/notification services stay asleep and
-// won't consume Kafka messages.
-function wakeAllServices(): void {
-  for (const url of ALL_SERVICE_URLS) {
-    ping(url, 60_000).catch(() => {/* ignore */});
-  }
+async function pingAll(urls: string[], timeoutMs: number): Promise<boolean> {
+  const results = await Promise.all(urls.map(url => ping(url, timeoutMs)));
+  return results.every(Boolean);
 }
 
 export type WakeupStatus = 'idle' | 'waking' | 'awake';
@@ -54,11 +48,8 @@ export function useServiceWakeup(): WakeupStatus {
     let cancelled = false;
     let pollTimer: ReturnType<typeof setTimeout>;
 
-    // Kick all services awake immediately
-    wakeAllServices();
-
     async function poll() {
-      const ok = await ping(LOAN_SERVICE_URL, POLL_INTERVAL_MS);
+      const ok = await pingAll(ALL_SERVICE_URLS, POLL_INTERVAL_MS);
       if (cancelled) return;
       if (ok) {
         setStatus('awake');
@@ -68,7 +59,7 @@ export function useServiceWakeup(): WakeupStatus {
     }
 
     async function initialProbe() {
-      const ok = await ping(LOAN_SERVICE_URL, INITIAL_TIMEOUT_MS);
+      const ok = await pingAll(ALL_SERVICE_URLS, INITIAL_TIMEOUT_MS);
       if (cancelled) return;
       if (ok) {
         setStatus('awake');

@@ -170,6 +170,12 @@ authRouter.post('/login', async (req: Request, res: Response): Promise<void> => 
     }
 
     const user = result.rows[0];
+
+    if (!user.password_hash) {
+      res.status(401).json({ error_code: 'GOOGLE_ACCOUNT', error: 'This account uses Google sign-in. Please sign in with Google.' });
+      return;
+    }
+
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!passwordMatch) {
