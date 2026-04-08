@@ -9,7 +9,9 @@ const kafka = new Kafka({
   brokers: [process.env.KAFKA_BROKER || 'localhost:9094'],
   ...(process.env.KAFKA_SASL_USERNAME
     ? {
-        ssl: true,
+        ssl: {
+          ca: process.env.KAFKA_CA_CERT ? [process.env.KAFKA_CA_CERT.replace(/\\n/g, '\n')] : undefined,
+        },
         sasl: {
           mechanism: 'scram-sha-256' as const,
           username: process.env.KAFKA_SASL_USERNAME,
