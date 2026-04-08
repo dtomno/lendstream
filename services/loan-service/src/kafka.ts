@@ -35,7 +35,7 @@ async function connectWithRetry(fn: () => Promise<void>, label: string): Promise
   throw new Error(`${label} failed after 10 attempts`);
 }
 
-async function publishToDlq(dlqProducer: Producer, originalTopic: string, payload: unknown, errorMessage: string): Promise<void> {
+async function publishToDlq(_dlqProducer: Producer, originalTopic: string, payload: unknown, errorMessage: string): Promise<void> {
   try {
     const correlationId = (payload as any)?.correlationId ?? null;
 
@@ -46,24 +46,7 @@ async function publishToDlq(dlqProducer: Producer, originalTopic: string, payloa
       [originalTopic, correlationId, JSON.stringify(payload), errorMessage],
     );
 
-    // Also send to Kafka DLQ topic
-    await dlqProducer.send({
-      topic: 'loan-service.DLQ',
-      messages: [
-        {
-          value: JSON.stringify({
-            originalTopic,
-            correlationId,
-            payload,
-            errorMessage,
-            failedAt: new Date().toISOString(),
-          }),
-        },
-      ],
-    });
-
-    kafkaEventsTotal.inc({ topic: 'loan-service.DLQ', status: 'published' });
-    logger.warn('Event sent to DLQ', { originalTopic, correlationId, errorMessage });
+    logger.warn('Event persisted to DLQ table', { originalTopic, correlationId, errorMessage });
   } catch (dlqErr) {
     logger.error('Failed to send event to DLQ', { originalTopic, dlqErr });
   }

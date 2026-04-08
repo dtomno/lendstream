@@ -1,29 +1,32 @@
 # Deployment Guide
 
-**Stack:** Vercel (frontend) · Render (6 backend services + PostgreSQL) · Redpanda Cloud (Kafka)
-
-> **Note:** Upstash Kafka was shut down on March 11, 2025. Redpanda Cloud is the recommended free replacement — it is fully Kafka-compatible so no code changes are needed.
+**Stack:** Vercel (frontend) · Render (6 backend services + PostgreSQL) · Aiven (Kafka)
 
 > **Render free tier note:** Free web services sleep after 15 minutes of inactivity. Kafka consumers reconnect and catch up on all missed messages when they wake up — the pipeline still completes, just with a 30–60 second cold-start delay. The frontend shows a "Services are starting up" overlay automatically during this time.
 
 ---
 
-## 1. Redpanda Cloud Kafka (do this first — you need the credentials for Render)
+## 1. Aiven Kafka (do this first — you need the credentials for Render)
 
-1. Go to [cloud.redpanda.com](https://cloud.redpanda.com) → sign up for a free account
-2. Click **Create Cluster** → choose **Serverless** (free tier) → pick a region → **Create**
-3. Once the cluster is ready, go to **Connect** → **Kafka API**. Copy:
-   - **Bootstrap server URL** → this is your `KAFKA_BROKER` (format: `xxx.redpanda.com:9092`)
-   - **Username** → `KAFKA_SASL_USERNAME`
+Aiven offers a permanently free Kafka tier — no trial period, no credit card required, no expiry.
+
+1. Go to [aiven.io](https://aiven.io) → sign up for a free account
+2. Click **Create service** → choose **Apache Kafka** → select the **Free** plan → pick a region → **Create**
+3. Once the cluster is ready, go to the service overview. Under **Connection information**, copy:
+   - **Service URI** → this is your `KAFKA_BROKER` (format: `xxx.aivencloud.com:PORT`)
+   - **User** → `KAFKA_SASL_USERNAME`
    - **Password** → `KAFKA_SASL_PASSWORD`
-4. Go to **Topics** → **Create Topic** and create these 7 topics (default settings, 1 partition each):
+
+   > **Note:** Aiven uses SASL/SCRAM-SHA-256 with SSL — already configured in the services.
+
+4. Go to **Topics** → **Create topic** and create these 5 topics (1 partition, default retention):
    - `loan-application-submitted`
    - `credit-check-completed`
    - `risk-assessment-completed`
    - `loan-decision-made`
    - `loan-account-created`
-   - `user-registered`
-   - `loan-service.DLQ`
+
+> **Free tier limits:** 5 topics · 250 KB/s throughput · 3-day retention · powers off after 24h idle (reactivate from the Aiven console — no data loss). This is fine for a portfolio demo.
 
 ---
 
@@ -78,9 +81,9 @@ All 6 services need these:
 
 | Variable | Value |
 |---|---|
-| `KAFKA_BROKER` | from Redpanda (e.g. `xxx.redpanda.com:9092`) |
-| `KAFKA_SASL_USERNAME` | from Redpanda |
-| `KAFKA_SASL_PASSWORD` | from Redpanda |
+| `KAFKA_BROKER` | from Aiven (e.g. `xxx.aivencloud.com:PORT`) |
+| `KAFKA_SASL_USERNAME` | from Aiven |
+| `KAFKA_SASL_PASSWORD` | from Aiven |
 | `DATABASE_URL` | External Database URL from Render — **same value for all 6 services** |
 | `FRONTEND_URL` | Your Vercel frontend URL (e.g. `https://lendstream.vercel.app`) — set after step 4 |
 | `NODE_ENV` | `production` |

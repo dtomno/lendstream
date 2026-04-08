@@ -86,28 +86,13 @@ authRouter.post('/register', async (req: Request, res: Response): Promise<void> 
       [userId, normalizedEmail, passwordHash, userRole, verificationToken, verificationTokenExpires],
     );
 
-    await client.query(
-      `INSERT INTO outbox_events (id, aggregate_id, topic, payload, published)
-       VALUES ($1, $2, $3, $4, false)`,
-      [
-        uuidv4(),
-        userId,
-        'user-registered',
-        JSON.stringify({
-          userId,
-          email: normalizedEmail,
-          role: userRole,
-          verificationToken,
-          verificationUrl,
-          correlationId: userId,
-          timestamp: new Date().toISOString(),
-        }),
-      ],
-    );
-
     await client.query('COMMIT');
 
-    logger.info('User registered – verification email queued', { userId, email: normalizedEmail, role: userRole });
+    sendVerificationEmail(normalizedEmail, verificationUrl).catch((err) => {
+      logger.error('Failed to send verification email after registration', { userId, err });
+    });
+
+    logger.info('User registered – verification email sent', { userId, email: normalizedEmail, role: userRole });
     res.status(201).json({ message: 'User registered successfully. Please check your email to verify your account.', userId });
   } catch (err: any) {
     await client.query('ROLLBACK');
